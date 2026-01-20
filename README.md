@@ -126,9 +126,9 @@ Edit `rss-to-telegram.yml` to add or change feeds:
 
 **Current Sources:**
 1. `https://news.google.com/news/rss/headlines/section/q/namibia%20sports/namibia%20sports?ned=us&hl=en`
-2. `http://www.einnews.com/rss/ENeMt6E9jOtjDuWx`
-3. `https://www.namibian.com.na/feed/`
-4. `https://www.jobs4na.com/feed/`
+2. `http://www.einnews.com/`
+3. `https://www.namibian.com.na/`
+4. `https://www.jobs4na.com/`
 
 ### Change Check Frequency
 Edit `rss-to-telegram.yml`:
