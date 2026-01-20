@@ -1,8 +1,8 @@
-name: RSS to Telegram Bot
+name: RSS to Telegram Bot - Namibia News
 
 on:
   schedule:
-    - cron: "*/20 * * * *"  # Every 10 minutes
+    - cron: "*/10 * * * *"  # Every 10 minutes
   workflow_dispatch:
 
 jobs:
@@ -23,25 +23,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install feedparser requests Pillow beautifulsoup4
 
-      - name: Run WordPress RSS bot (yenibakisgazetesi.com)
+      - name: Run RSS bot - Google News Namibia Sports
         env:
-          RSS_URL: https://yenibakisgazetesi.com/feed/
+          RSS_URL: https://news.google.com/news/rss/headlines/section/q/namibia%20sports/namibia%20sports?ned=us&hl=en
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
 
-      - name: Run WordPress RSS bot (yenibakishaber.com)
+      - name: Run RSS bot - EIN News Namibia
         env:
-          RSS_URL: https://www.yenibakishaber.com/rss
+          RSS_URL: http://www.einnews.com/rss/ENeMt6E9jOtjDuWx
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
 
-      - name: Run YouTube RSS bot
+      - name: Run RSS bot - The Namibian
         env:
-          RSS_URL: https://www.youtube.com/feeds/videos.xml?channel_id=UCPM8fdDZH_cwTgXUBsmj8Qw
+          RSS_URL: https://www.namibian.com.na/feed/
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+
+      - name: Run RSS bot - Jobs4NA
+        env:
+          RSS_URL: https://www.jobs4na.com/feed/
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |

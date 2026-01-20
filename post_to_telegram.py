@@ -17,7 +17,7 @@ import time
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-RSS_URL = os.environ.get("RSS_URL", "https://www.yenibakishaber.com/rss")
+RSS_URL = os.environ.get("RSS_URL")
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
@@ -55,14 +55,14 @@ def save_posted_links(links_dict):
     
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(links_dict, f, ensure_ascii=False, indent=2)
-    print(f"✅ {len(links_dict)} link kaydedildi")
+    print(f"✅ {len(links_dict)} links saved")
 
 def mark_as_posted(link):
     """Mark a link as posted with current timestamp"""
     posted_links = load_posted_links()
     posted_links[link] = datetime.now().isoformat()
     save_posted_links(posted_links)
-    print(f"✅ Link işaretlendi: {link[:50]}...")
+    print(f"✅ Link marked: {link[:50]}...")
 
 def optimize_image(image_data):
     """Optimize image to fit within size limit while maintaining quality"""
@@ -95,16 +95,16 @@ def optimize_image(image_data):
             img.save(output, format='JPEG', quality=quality, optimize=True, progressive=True)
             
             if output.tell() <= MAX_IMAGE_SIZE:
-                print(f"✅ Görsel optimize edildi: {len(image_data)} -> {output.tell()} bytes (kalite: {quality})")
+                print(f"✅ Image optimized: {len(image_data)} -> {output.tell()} bytes (quality: {quality})")
                 return output.getvalue()
             
             quality -= 5
         
-        print("⚠ Görsel optimize edilemedi, boyut sınırı aşılıyor")
+        print("⚠ Image could not be optimized, size limit exceeded")
         return None
         
     except Exception as e:
-        print(f"❌ Görsel optimizasyon hatası: {e}")
+        print(f"❌ Image optimization error: {e}")
         return None
 
 def fetch_image(url):
@@ -116,16 +116,15 @@ def fetch_image(url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-            'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Referer': 'https://www.yenibakishaber.com/'
+            'Accept-Language': 'en-US,en;q=0.9',
         }
         
-        print(f"📥 Görsel indiriliyor: {url}")
+        print(f"📥 Downloading image: {url}")
         r = requests.get(url, timeout=15, headers=headers, stream=True)
         r.raise_for_status()
         
         content = r.content
-        print(f"✅ Görsel indirildi: {len(content)} bytes")
+        print(f"✅ Image downloaded: {len(content)} bytes")
         
         # If image is already small enough, return it
         if len(content) <= MAX_IMAGE_SIZE:
@@ -135,7 +134,7 @@ def fetch_image(url):
         return optimize_image(content)
         
     except Exception as e:
-        print(f"❌ Görsel indirme hatası ({url}): {e}")
+        print(f"❌ Image download error ({url}): {e}")
         return None
 
 def clean_html(text):
@@ -163,7 +162,7 @@ def clean_html(text):
     return text.strip()
 
 def fetch_article_thumbnail(article_url):
-    """Fetch featured image from WordPress article page"""
+    """Fetch featured image from article page"""
     if not article_url or article_url == '#':
         return None
     
@@ -171,15 +170,15 @@ def fetch_article_thumbnail(article_url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
         }
         
-        print(f"🌐 Makale sayfası açılıyor: {article_url}")
+        print(f"🌐 Opening article page: {article_url}")
         response = requests.get(article_url, timeout=15, headers=headers)
         response.encoding = 'utf-8'
         
         if response.status_code != 200:
-            print(f"⚠ Makale sayfası yüklenemedi: HTTP {response.status_code}")
+            print(f"⚠ Article page failed to load: HTTP {response.status_code}")
             return None
         
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -188,14 +187,14 @@ def fetch_article_thumbnail(article_url):
         og_image = soup.find('meta', property='og:image')
         if og_image and og_image.get('content'):
             url = og_image['content']
-            print(f"✅ Thumbnail bulundu (og:image): {url}")
+            print(f"✅ Thumbnail found (og:image): {url}")
             return url
         
         # Method 2: Twitter card image
         twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
         if twitter_image and twitter_image.get('content'):
             url = twitter_image['content']
-            print(f"✅ Thumbnail bulundu (twitter:image): {url}")
+            print(f"✅ Thumbnail found (twitter:image): {url}")
             return url
         
         # Method 3: WordPress featured image
@@ -204,7 +203,7 @@ def fetch_article_thumbnail(article_url):
             url = featured_img['src']
             # Skip tiny images
             if 'placeholder' not in url.lower() and '1x1' not in url.lower():
-                print(f"✅ Thumbnail bulundu (featured image): {url}")
+                print(f"✅ Thumbnail found (featured image): {url}")
                 return url
         
         # Method 4: First large image in content
@@ -217,17 +216,17 @@ def fetch_article_thumbnail(article_url):
                 height = img.get('height', '0')
                 try:
                     if int(width) >= 300 or int(height) >= 300:
-                        print(f"✅ Thumbnail bulundu (content image): {src}")
+                        print(f"✅ Thumbnail found (content image): {src}")
                         return src
                 except:
-                    print(f"✅ Thumbnail bulundu (content image): {src}")
+                    print(f"✅ Thumbnail found (content image): {src}")
                     return src
         
-        print("⚠ Makale sayfasında thumbnail bulunamadı")
+        print("⚠ No thumbnail found on article page")
         return None
         
     except Exception as e:
-        print(f"❌ Makale sayfası okuma hatası: {e}")
+        print(f"❌ Article page reading error: {e}")
         return None
 
 def extract_youtube_thumbnail(entry, link):
@@ -262,7 +261,7 @@ def extract_youtube_thumbnail(entry, link):
                 headers = {'User-Agent': 'Mozilla/5.0'}
                 r = requests.head(url, timeout=5, headers=headers, allow_redirects=True)
                 if r.status_code == 200:
-                    print(f"✅ YouTube thumbnail bulundu: {url}")
+                    print(f"✅ YouTube thumbnail found: {url}")
                     return url
             except:
                 continue
@@ -271,38 +270,47 @@ def extract_youtube_thumbnail(entry, link):
     if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
         url = entry.media_thumbnail[0].get('url')
         if url:
-            print(f"✅ YouTube media_thumbnail kullanılıyor: {url}")
+            print(f"✅ YouTube media_thumbnail found: {url}")
             return url
     
-    print("⚠ YouTube thumbnail bulunamadı")
+    print("⚠ YouTube thumbnail not found")
     return None
 
-def create_beautiful_post(title, link, category=""):
-    """Create a beautiful, professional Telegram post with proper formatting"""
+def create_beautiful_post(title, link, category="", summary=""):
+    """Create a beautiful, professional Telegram post with proper formatting for Namibian news"""
     
     # Decode HTML entities in title
     title = clean_html(title)
+    summary = clean_html(summary)
     
     # Add appropriate emoji based on category
     category_emojis = {
-        'SPOR': '⚽',
-        'EKONOMİ': '💰',
-        'DÜNYA': '🌍',
-        'TÜRKİYE': '🇹🇷',
-        'KIBRIS': '🇨🇾',
-        'GÜNEY KIBRIS': '🇨🇾',
-        'SAĞLIK': '🏥',
-        'TEKNOLOJİ': '💻',
-        'KÜLTÜR': '🎭',
-        'SANAT': '🎨',
-        'GENEL': '📰',
-        'POLİTİKA': '🏛️',
-        'HABER': '📢',
-        'GÜNCEL': '🆕',
-        'İZMİR': '🏙️',
-        'AYDIN': '🌆',
-        'MAGAZİN': '⭐',
-        'HAYAT': '🌟',
+        'SPORTS': '⚽',
+        'SPORT': '⚽',
+        'FOOTBALL': '⚽',
+        'RUGBY': '🏉',
+        'CRICKET': '🏏',
+        'BUSINESS': '💼',
+        'ECONOMY': '💰',
+        'FINANCE': '💵',
+        'POLITICS': '🏛️',
+        'ELECTION': '🗳️',
+        'GOVERNMENT': '🏛️',
+        'HEALTH': '🏥',
+        'EDUCATION': '📚',
+        'TECHNOLOGY': '💻',
+        'SCIENCE': '🔬',
+        'ENTERTAINMENT': '🎭',
+        'CULTURE': '🎨',
+        'JOBS': '💼',
+        'EMPLOYMENT': '👔',
+        'CAREER': '📊',
+        'NEWS': '📰',
+        'BREAKING': '🚨',
+        'LATEST': '🆕',
+        'WEATHER': '🌤️',
+        'CRIME': '🚔',
+        'JUSTICE': '⚖️',
     }
     
     # Try to find matching category
@@ -313,10 +321,23 @@ def create_beautiful_post(title, link, category=""):
             break
     
     # Create post with beautiful formatting using Telegram HTML
-    post_text = f"<b>{emoji} Yeni Haber</b>\n\n"
+    # Namibia flag emoji
+    namibia_flag = '🇳🇦'
+    
+    post_text = f"<b>{namibia_flag} {emoji} Namibia News</b>\n\n"
     post_text += f"<b>{title}</b>\n\n"
-    post_text += f"📂 <i>{category}</i>\n\n"
-    post_text += f"🔗 <a href='{link}'>Devamı için tıklayın</a>"
+    
+    # Add intro/summary if available
+    if summary:
+        # Limit summary to 200 characters
+        if len(summary) > 200:
+            summary = summary[:197] + "..."
+        post_text += f"<i>{summary}</i>\n\n"
+    
+    if category:
+        post_text += f"📂 <i>{category}</i>\n\n"
+    
+    post_text += f"🔗 <a href='{link}'>Read full article</a>"
     
     return post_text
 
@@ -376,27 +397,49 @@ def post_to_telegram(entry):
     categories = []
     if hasattr(entry, 'tags'):
         categories = [tag.term for tag in entry.tags]
-    category = categories[0] if categories else "GENEL"
+    category = categories[0] if categories else "General"
     
     print(f"\n{'='*60}")
-    print(f"📌 İşleniyor: {title[:80]}...")
-    print(f"   Kategori: {category}")
+    print(f"📌 Processing: {title[:80]}...")
+    print(f"   Category: {category}")
     print(f"   Link: {link}")
     print(f"{'='*60}")
     
     # Detect source type and extract thumbnail
     is_youtube = 'youtube.com' in RSS_URL.lower() or 'youtu.be' in RSS_URL.lower()
+    is_google_news = 'news.google.com' in RSS_URL.lower()
     
     thumbnail_url = None
+    
     if is_youtube:
         thumbnail_url = extract_youtube_thumbnail(entry, link)
+    elif is_google_news:
+        # For Google News, try media_content first
+        if hasattr(entry, 'media_content') and entry.media_content:
+            media_url = entry.media_content[0].get('url')
+            if media_url:
+                print(f"✅ Google News media_content found: {media_url}")
+                thumbnail_url = media_url
+        # Then try enclosures
+        elif hasattr(entry, 'enclosures') and entry.enclosures:
+            enclosure_url = entry.enclosures[0].get('url') or entry.enclosures[0].get('href')
+            if enclosure_url:
+                print(f"✅ Google News enclosure found: {enclosure_url}")
+                thumbnail_url = enclosure_url
     else:
-        # For WordPress, try RSS enclosure first, then fetch from article page
+        # For other feeds, try RSS enclosure first, then fetch from article page
         if hasattr(entry, 'enclosures') and entry.enclosures:
             enclosure_url = entry.enclosures[0].get('url') or entry.enclosures[0].get('href')
             if enclosure_url:
-                print(f"✅ RSS enclosure bulundu: {enclosure_url}")
+                print(f"✅ RSS enclosure found: {enclosure_url}")
                 thumbnail_url = enclosure_url
+        
+        # Try media_content
+        if not thumbnail_url and hasattr(entry, 'media_content') and entry.media_content:
+            media_url = entry.media_content[0].get('url')
+            if media_url:
+                print(f"✅ RSS media_content found: {media_url}")
+                thumbnail_url = media_url
         
         # If no enclosure, fetch from article page
         if not thumbnail_url:
@@ -405,76 +448,76 @@ def post_to_telegram(entry):
     # Fetch thumbnail image
     image_data = None
     if thumbnail_url:
-        print(f"📸 Thumbnail işleniyor...")
+        print(f"📸 Processing thumbnail...")
         image_data = fetch_image(thumbnail_url)
         
         if image_data:
-            print(f"✅ Thumbnail hazır")
+            print(f"✅ Thumbnail ready")
         else:
-            print(f"⚠ Thumbnail indirilemedi, devam ediliyor...")
+            print(f"⚠ Thumbnail could not be downloaded, continuing...")
     else:
-        print(f"⚠ Thumbnail bulunamadı, devam ediliyor...")
+        print(f"⚠ Thumbnail not found, continuing...")
     
     # Create beautiful post text
-    post_text = create_beautiful_post(title, link, category)
+    post_text = create_beautiful_post(title, link, category, summary)
     
     # Post to Telegram
-    print(f"\n📤 Telegram'a gönderiliyor...")
+    print(f"\n📤 Sending to Telegram...")
     
     success = send_telegram_message(post_text, image_data)
     
     if success:
         mark_as_posted(link)
         
-        print(f"\n✅ BAŞARIYLA PAYLAŞILDI!")
-        print(f"📌 Başlık: {title}")
-        print(f"📂 Kategori: {category}")
+        print(f"\n✅ SUCCESSFULLY POSTED!")
+        print(f"📌 Title: {title}")
+        print(f"📂 Category: {category}")
         print(f"🔗 Link: {link}")
-        print(f"🖼️ Thumbnail: {'Evet ✔' if image_data else 'Hayır ✗'}")
-        print(f"⏰ Zaman: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🖼️ Thumbnail: {'Yes ✔' if image_data else 'No ✗'}")
+        print(f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         return True
     else:
-        print(f"\n❌ PAYLAŞIM HATASI!")
+        print(f"\n❌ POSTING FAILED!")
         return False
 
 # Parse RSS feed with UTF-8 support
 print(f"\n{'='*60}")
-print(f"📰 RSS Feed İşleniyor: {RSS_URL}")
+print(f"📰 Processing RSS Feed: {RSS_URL}")
 print(f"{'='*60}\n")
 
 feed = feedparser.parse(RSS_URL)
 
 if not feed.entries:
-    print("⚠ RSS beslemesinde içerik bulunamadı.")
+    print("⚠ No content found in RSS feed.")
     sys.exit(0)
 
-print(f"✅ RSS beslemesi okundu: {len(feed.entries)} içerik bulundu\n")
+print(f"✅ RSS feed loaded: {len(feed.entries)} items found\n")
 
 # Load previously posted links
 posted_links = load_posted_links()
-print(f"📊 Daha önce paylaşılan link sayısı: {len(posted_links)}")
+print(f"📊 Previously posted links: {len(posted_links)}")
 
 # Test Telegram connection
-print(f"\n🔐 Telegram bağlantısı test ediliyor...")
+print(f"\n🔐 Testing Telegram connection...")
 try:
     response = requests.get(f"{TELEGRAM_API_URL}/getMe", timeout=10)
     response.raise_for_status()
     bot_info = response.json()
     if bot_info.get('ok'):
         bot_name = bot_info['result']['first_name']
-        print(f"✅ Telegram bağlantısı başarılı: {bot_name}\n")
+        print(f"✅ Telegram connection successful: {bot_name}\n")
     else:
-        print(f"❌ Telegram bağlantı hatası: {bot_info}")
+        print(f"❌ Telegram connection error: {bot_info}")
         sys.exit(1)
 except Exception as e:
-    print(f"❌ Telegram bağlantı hatası: {e}")
+    print(f"❌ Telegram connection error: {e}")
     sys.exit(1)
 
 # Process entries in reverse order (oldest to newest) to maintain chronological order
 # But limit to most recent entries to avoid processing too many
 entries_to_process = feed.entries[:MAX_ENTRIES_TO_PROCESS]
-print(f"⏳ İşlenecek içerik sayısı: {len(entries_to_process)}")
+print(f"⏳ Items to process: {len(entries_to_process)}")
 
 new_posts_count = 0
 
@@ -485,7 +528,7 @@ for i, entry in enumerate(entries_to_process):
     # Skip if already posted
     if link in posted_links:
         title = clean_html(entry.title)[:60]
-        print(f"\n⏭ Zaten paylaşıldı: {title}...")
+        print(f"\n⏭ Already posted: {title}...")
         continue
     
     # Post to Telegram
@@ -495,17 +538,17 @@ for i, entry in enumerate(entries_to_process):
         
         # Add delay between posts to avoid rate limits (except for last post)
         if i < len(entries_to_process) - 1:
-            print(f"\n⏳ {POST_DELAY} saniye bekleniyor...")
+            print(f"\n⏳ Waiting {POST_DELAY} seconds...")
             time.sleep(POST_DELAY)
 
 print(f"\n{'='*60}")
-print(f"📊 İŞLEM TAMAMLANDI")
+print(f"📊 PROCESS COMPLETED")
 print(f"{'='*60}")
-print(f"Toplam kontrol edilen içerik: {len(entries_to_process)}")
-print(f"Yeni paylaşılan içerik: {new_posts_count}")
-print(f"Zaten paylaşılmış içerik: {len(entries_to_process) - new_posts_count}")
-print(f"Toplam kayıtlı link: {len(load_posted_links())}")
+print(f"Total items checked: {len(entries_to_process)}")
+print(f"New items posted: {new_posts_count}")
+print(f"Already posted items: {len(entries_to_process) - new_posts_count}")
+print(f"Total saved links: {len(load_posted_links())}")
 print(f"{'='*60}\n")
 
 if new_posts_count == 0:
-    print("ℹ️ Yeni içerik bulunamadı.")
+    print("ℹ️ No new content found.")
