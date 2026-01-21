@@ -23,9 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install feedparser requests Pillow beautifulsoup4
 
-      - name: Run RSS bot - Eagle FM
+      - name: Run RSS bot - Jobs4NA
         env:
-          RSS_URL: https://www.eaglefm.com.na/feed/
+          RSS_URL: https://www.jobs4na.com/feed/
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
@@ -39,17 +39,17 @@ jobs:
         run: |
           python post_to_telegram.py
 
-      - name: Run RSS bot - The Namibian
+      - name: Run RSS bot - Eagle FM
         env:
-          RSS_URL: https://www.namibian.com.na/feed/
+          RSS_URL: https://www.eaglefm.com.na/feed/
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
 
-      - name: Run RSS bot - Jobs4NA
+      - name: Run RSS bot - The Namibian
         env:
-          RSS_URL: https://www.jobs4na.com/feed/
+          RSS_URL: https://www.namibian.com.na/feed/
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
