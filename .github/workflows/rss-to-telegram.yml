@@ -2,7 +2,7 @@ name: RSS to Telegram Bot - Namibia News
 
 on:
   schedule:
-    - cron: "*/10 * * * *"  # Every 10 minutes
+    - cron: "*/20 * * * *"  # Every 20 minutes
   workflow_dispatch:
 
 jobs:
