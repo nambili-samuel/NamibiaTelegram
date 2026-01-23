@@ -55,6 +55,14 @@ jobs:
         run: |
           python post_to_telegram.py
 
+      - name: Run RSS bot - New Era
+        env:
+          RSS_URL: https://neweralive.na/feed/
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+
       - name: Run RSS bot - The Namibian
         env:
           RSS_URL: https://www.namibian.com.na/feed/
