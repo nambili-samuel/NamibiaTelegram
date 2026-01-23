@@ -31,6 +31,14 @@ jobs:
         run: |
           python post_to_telegram.py
 
+      - name: Run RSS bot - Namijob
+        env:
+          RSS_URL: https://www.namijob.com/rss.xml
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+
       - name: Run RSS bot - Namibian Sun
         env:
           RSS_URL: https://www.namibiansun.com/rssFeed/137
