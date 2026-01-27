@@ -2,21 +2,26 @@ name: RSS to Telegram Bot - Namibia News
 
 on:
   schedule:
-    - cron: "*/20 * * * *"  # Every 20 minutes
+    # Run every 20 minutes to catch fresh content quickly
+    - cron: "*/20 * * * *"
+  # Allow manual trigger for testing
   workflow_dispatch:
 
 jobs:
   post-to-telegram:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper state management
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'  # Cache pip dependencies for faster builds
 
       - name: Install dependencies
         run: |
@@ -30,14 +35,16 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
+        continue-on-error: true
 
-      - name: Run RSS bot - Namibia Jobs
+      - name: Run RSS bot - Namibia Jobs (Google News)
         env:
-          RSS_URL: https://news.google.com/news/rss/headlines/section/q/namibia%20jobs/namibia%20jobs?ned=us&hl=en
+          RSS_URL: https://news.google.com/rss/search?q=namibia+jobs&hl=en-NA&gl=NA&ceid=NA:en
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
+        continue-on-error: true
 
       - name: Run RSS bot - Namibian Sun
         env:
@@ -46,6 +53,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
+        continue-on-error: true
 
       - name: Run RSS bot - Eagle FM
         env:
@@ -54,6 +62,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
+        continue-on-error: true
 
       - name: Run RSS bot - New Era
         env:
@@ -62,6 +71,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
+        continue-on-error: true
 
       - name: Run RSS bot - The Namibian
         env:
@@ -70,12 +80,13 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python post_to_telegram.py
+        continue-on-error: true
 
-      - name: Commit state file changes
+      - name: Commit and push state file changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add posted_links.json || true
-          git commit -m "Update posted links state" || true
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update posted links state [$(date +'%Y-%m-%d %H:%M:%S')]" || true
           git push || true
         continue-on-error: true
