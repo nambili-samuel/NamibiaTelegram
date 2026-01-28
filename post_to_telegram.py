@@ -426,6 +426,7 @@ def get_source_info(rss_url):
         'namibiansun.com': {'name': 'Namibian Sun', 'emoji': '☀️', 'type': 'News'},
         'eaglefm.com.na': {'name': 'Eagle FM', 'emoji': '📻', 'type': 'Radio & News'},
         'neweralive.na': {'name': 'New Era', 'emoji': '📰', 'type': 'News'},
+        'thebrief.com.na': {'name': 'The Brief', 'emoji': '📋', 'type': 'News'},
         'namibian.com.na': {'name': 'The Namibian', 'emoji': '📑', 'type': 'News'},
     }
     
