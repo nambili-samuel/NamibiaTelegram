@@ -27,9 +27,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install feedparser requests Pillow beautifulsoup4
 
-      - name: Run RSS bot - Jobs4NA
+      - name: Run RSS bot - Windhoek Observer
         env:
-          RSS_URL: https://www.jobs4na.com/feed/
+          RSS_URL: https://www.observer24.com.na/feed/
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
