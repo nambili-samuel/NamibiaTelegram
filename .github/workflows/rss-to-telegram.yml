@@ -2,32 +2,20 @@ name: RSS to Telegram Bot - Namibia News
 
 on:
   schedule:
-    # Run every 30 minutes
+    # Run every 30 minutes to catch fresh content quickly
     - cron: "*/30 * * * *"
+  # Allow manual trigger for testing
   workflow_dispatch:
-
-# Add concurrency control to prevent overlapping runs
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   post-to-telegram:
-    runs-on: ubuntu-22.04  # Changed from latest to specific version
-    
-    # Add timeout to prevent hanging
-    timeout-minutes: 15
-    
-    # Add strategy for better runner handling
-    strategy:
-      max-parallel: 1
-      fail-fast: false
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch all history for proper state management
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,190 +27,74 @@ jobs:
           python -m pip install --upgrade pip
           pip install feedparser requests Pillow beautifulsoup4
 
-      # Create a single script to handle all RSS feeds
-      - name: Create consolidated RSS script
-        run: |
-          cat > rss_bot.py << 'EOF'
-          import os
-          import sys
-          import time
-          import feedparser
-          import requests
-          import json
-          from datetime import datetime, timedelta
-          from pathlib import Path
-
-          # RSS feeds to process
-          RSS_FEEDS = [
-              {"name": "Windhoek Observer", "url": "https://www.observer24.com.na/feed/"},
-              {"name": "Namibia Jobs (Google News)", "url": "https://news.google.com/rss/search?q=namibia+jobs&hl=en-NA&gl=NA&ceid=NA:en"},
-              {"name": "Namibian Sun", "url": "https://www.namibiansun.com/rssFeed/137"},
-              {"name": "Eagle FM", "url": "https://www.eaglefm.com.na/feed/"},
-              {"name": "New Era", "url": "https://neweralive.na/feed/"},
-              {"name": "The Brief", "url": "https://thebrief.com.na/feed/"},
-              {"name": "The Namibian", "url": "https://www.namibian.com.na/feed/"}
-          ]
-
-          # Telegram configuration
-          TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-          TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-          STATE_FILE = 'posted_links.json'
-
-          def load_posted_links():
-              try:
-                  if Path(STATE_FILE).exists():
-                      with open(STATE_FILE, 'r') as f:
-                          return json.load(f)
-              except:
-                  pass
-              return []
-
-          def save_posted_links(links):
-              try:
-                  with open(STATE_FILE, 'w') as f:
-                      json.dump(links, f, indent=2)
-              except:
-                  pass
-
-          def send_to_telegram(message, max_retries=3):
-              url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-              payload = {
-                  'chat_id': TELEGRAM_CHAT_ID,
-                  'text': message,
-                  'parse_mode': 'HTML',
-                  'disable_web_page_preview': False
-              }
-              
-              for attempt in range(max_retries):
-                  try:
-                      response = requests.post(url, data=payload, timeout=30)
-                      if response.status_code == 200:
-                          return True
-                      elif response.status_code == 429:
-                          # Rate limited - wait and retry
-                          wait_time = 30 * (attempt + 1)
-                          time.sleep(wait_time)
-                          continue
-                      else:
-                          print(f"Telegram API error: {response.status_code} - {response.text}")
-                          return False
-                  except requests.exceptions.RequestException as e:
-                      print(f"Request error (attempt {attempt + 1}): {e}")
-                      if attempt < max_retries - 1:
-                          time.sleep(10)
-                          continue
-              return False
-
-          def process_feed(feed_name, feed_url, posted_links, hours_limit=24):
-              try:
-                  print(f"Processing {feed_name}...")
-                  feed = feedparser.parse(feed_url)
-                  
-                  if feed.bozo:
-                      print(f"  Warning: Feed parsing error for {feed_name}")
-                      return posted_links
-                  
-                  new_items = 0
-                  for entry in feed.entries[:5]:  # Process only latest 5 items
-                      link = entry.get('link', '')
-                      if not link:
-                          continue
-                      
-                      # Check if already posted
-                      if link in posted_links:
-                          continue
-                      
-                      # Check if item is recent (within hours_limit)
-                      published_time = entry.get('published_parsed', None)
-                      if published_time:
-                          from time import mktime
-                          item_time = datetime.fromtimestamp(mktime(published_time))
-                          if (datetime.now() - item_time) > timedelta(hours=hours_limit):
-                              continue
-                      
-                      # Format message
-                      title = entry.get('title', 'No title')
-                      description = entry.get('description', '')
-                      if len(description) > 300:
-                          description = description[:300] + "..."
-                      
-                      message = f"<b>{feed_name}</b>\n\n"
-                      message += f"<b>{title}</b>\n\n"
-                      if description:
-                          message += f"{description}\n\n"
-                      message += f"🔗 <a href='{link}'>Read more</a>"
-                      
-                      # Send to Telegram
-                      if send_to_telegram(message):
-                          posted_links.append(link)
-                          new_items += 1
-                          print(f"  ✓ Posted: {title[:50]}...")
-                          time.sleep(2)  # Delay between posts to avoid rate limiting
-                      else:
-                          print(f"  ✗ Failed to post: {title[:50]}...")
-                          break  # Stop if API fails
-                  
-                  print(f"  Processed {new_items} new items from {feed_name}")
-                  return posted_links
-                  
-              except Exception as e:
-                  print(f"  Error processing {feed_name}: {e}")
-                  return posted_links
-
-          def main():
-              print("Starting RSS to Telegram bot...")
-              
-              if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-                  print("ERROR: Telegram credentials not set")
-                  return
-              
-              posted_links = load_posted_links()
-              
-              # Keep only recent links (last 1000 items)
-              if len(posted_links) > 1000:
-                  posted_links = posted_links[-1000:]
-              
-              original_count = len(posted_links)
-              
-              # Process each feed
-              for feed in RSS_FEEDS:
-                  posted_links = process_feed(feed['name'], feed['url'], posted_links)
-                  time.sleep(1)  # Short delay between feeds
-              
-              # Save updated state
-              if len(posted_links) > original_count:
-                  save_posted_links(posted_links)
-                  print(f"State saved. Total tracked links: {len(posted_links)}")
-              
-              print("RSS bot completed!")
-
-          if __name__ == "__main__":
-              main()
-          EOF
-
-      - name: Run consolidated RSS bot
+      - name: Run RSS bot - Windhoek Observer
         env:
+          RSS_URL: https://www.observer24.com.na/feed/
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          echo "Starting RSS bot execution..."
-          python rss_bot.py
-          echo "Execution completed with exit code: $?"
+          python post_to_telegram.py
+        continue-on-error: true
+
+      - name: Run RSS bot - Namibia Jobs (Google News)
+        env:
+          RSS_URL: https://news.google.com/rss/search?q=namibia+jobs&hl=en-NA&gl=NA&ceid=NA:en
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+        continue-on-error: true
+
+      - name: Run RSS bot - Namibian Sun
+        env:
+          RSS_URL: https://www.namibiansun.com/rssFeed/137
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+        continue-on-error: true
+
+      - name: Run RSS bot - Eagle FM
+        env:
+          RSS_URL: https://www.eaglefm.com.na/feed/
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+        continue-on-error: true
+
+      - name: Run RSS bot - New Era
+        env:
+          RSS_URL: https://neweralive.na/feed/
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+        continue-on-error: true
+
+      - name: Run RSS bot - The Brief
+        env:
+          RSS_URL: https://thebrief.com.na/feed/
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+        continue-on-error: true
+
+      - name: Run RSS bot - The Namibian
+        env:
+          RSS_URL: https://www.namibian.com.na/feed/
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python post_to_telegram.py
+        continue-on-error: true
 
       - name: Commit and push state file changes
-        if: always()
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          
-          # Check if there are changes
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git add posted_links.json || true
-            git commit -m "Update posted links state [$(date +'%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
-            # Try push with retry logic
-            for i in 1 2 3; do
-              git pull --rebase && git push && break || sleep 5
-            done
-          fi
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add posted_links.json || true
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update posted links state [$(date +'%Y-%m-%d %H:%M:%S')]" || true
+          git push || true
+        continue-on-error: true
