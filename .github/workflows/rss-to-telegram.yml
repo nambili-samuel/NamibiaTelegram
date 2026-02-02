@@ -2,8 +2,8 @@ name: RSS to Telegram Bot - Namibia News
 
 on:
   schedule:
-    # Run every 30 minutes to catch fresh content quickly
-    - cron: "*/30 * * * *"
+    # Run every 45 minutes to catch fresh content quickly
+    - cron: "*/45 * * * *"
   # Allow manual trigger for testing
   workflow_dispatch:
 
