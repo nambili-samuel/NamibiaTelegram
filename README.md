@@ -1,4 +1,4 @@
-# Namibian AI News Agent
+# Namibia — News AI Agent
 
 <p align="center"> <img src="https://raw.githubusercontent.com/nambili-samuel/NamibiaTelegram/main/Namibia%20Telegram.gif" alt="Namibia Times AI News Agent" width="900"> </p>
 One of my notable AI and automation projects is the development of an intelligent news aggregation and distribution system for Namibia. The system functions as an AI-powered autonomous agent that continuously monitors, crawls, extracts, and analyzes news content from multiple online sources related to Namibia. It automatically identifies relevant articles, processes the information, generates structured posts, and publishes them directly to my Telegram channel, **Namibian Times** (https://t.me/namibiantimes) without requiring manual intervention. This AI agent can be deployed even on WhatsApp, web and mobile applications.
