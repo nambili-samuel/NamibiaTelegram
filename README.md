@@ -1,7 +1,7 @@
 # Namibia — News AI Agent
 
 <p align="center"> <img src="https://raw.githubusercontent.com/nambili-samuel/NamibiaTelegram/main/Namibia%20Telegram.gif" alt="Namibia Times AI News Agent" width="900"> </p>
-One of my notable AI and automation projects is the development of an intelligent news aggregation and distribution system for Namibia. The system functions as an AI-powered autonomous agent that continuously monitors, crawls, extracts, and analyzes news content from multiple online sources related to Namibia. It automatically identifies relevant articles, processes the information, generates structured posts, and publishes them directly to my Telegram channel, **Namibian Times** (https://t.me/namibiantimes) without requiring manual intervention. This AI agent can be deployed even on WhatsApp, web and mobile applications.
+One of my notable AI and automation projects is the development of an intelligent news aggregation and distribution system for Namibia. The system functions as an AI-powered autonomous agent that continuously monitors, crawls, extracts, and analyzes news content from multiple online sources related to Namibia. It automatically identifies relevant articles, processes the information, generates structured posts, and publishes them directly to my Telegram channel, [Namibian Times](https://t.me/namibiantimes) without requiring manual intervention. This AI agent can be deployed even on WhatsApp, web and mobile applications.
 
 The the agent demonstrates the practical application of artificial intelligence, autonomous agents, web scraping, natural language processing, workflow automation, and API integration. Every published post is automatically enriched with professional formatting, article thumbnails, headlines, introductory summaries, publication metadata, and rich content features to maximize readability and user engagement.
 
@@ -14,22 +14,21 @@ This project serves as evidence of my capability to design scalable intelligent 
 
 ## Features
 
-- ✅ Automatic news posting from 4 different Namibian RSS sources:
-  - 📰 Google News - Namibia Sports
-  - 📰 EIN News - Namibia
+- ✅ Automatic news posting from major Namibian publications:
+  - 📰 Google News 
+  - 📰 EIN News 
   - 📰 The Namibian
+  - 📰 Namibian Sun
+  - 📰 New Era
+  - 📰 Eagle FM Radio
   - 💼 Jobs4NA
 - ✅ All posts include thumbnail images
-- ✅ Beautiful HTML formatting with:
-  - 🇳🇦 Namibia flag
-  - 📌 Category-based icons
-  - 📝 Article headlines
-  - 📄 Article intro/summary
-  - 🔗 Read more links
+- ✅ Beautiful HTML formatting
 - ✅ Prevents duplicate posts
 - ✅ Runs every 10 minutes automatically
 - ✅ Rate limit protection
 - ✅ Image optimization
+- ✅ 24/7 Posting
 
 ## 📋 Setup Steps
 
@@ -83,7 +82,7 @@ In your repository, go to **Settings** → **Secrets and variables** → **Actio
 2. Enable the workflow
 3. Click **Run workflow** to test it immediately
 
-## 🚀 How It Works
+## How It Works
 
 The bot automatically:
 - Checks **4 different Namibian RSS feeds** every 10 minutes:
@@ -95,24 +94,9 @@ The bot automatically:
 - Posts them to your Telegram group with thumbnails
 - Saves posted articles in `posted_links.json` (shared across all sources)
 
-## 🎨 Message Format
-
-```
-🇳🇦 ⚽ Namibia News
-
-Article Headline Goes Here
-
-Brief summary or introduction of the article...
-
-📂 Sports
-
-🔗 Read full article
-```
-
 ## 📸 Thumbnail Sources
 
 The bot searches for thumbnails in this order:
-1. RSS enclosure (image in feed)
 2. Google News media_content
 3. Open Graph image (og:image meta tag)
 4. Twitter Card image
@@ -121,25 +105,12 @@ The bot searches for thumbnails in this order:
 
 ## ⚙️ Customization
 
-### Change RSS Feeds
-Edit `rss-to-telegram.yml` to add or change feeds:
-
-```yaml
-- name: Run RSS bot - Your Source Name
-  env:
-    RSS_URL: https://example.com/feed
-    TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-    TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
   run: |
     python post_to_telegram.py
 ```
 
 **Current Sources:**
 1. `https://news.google.com/news/rss/headlines/section/q/namibia%20sports/namibia%20sports?ned=us&hl=en`
-2. `http://www.einnews.com/`
-3. `https://www.namibian.com.na/`
-4. `https://www.jobs4na.com/`
-
 ### Change Check Frequency
 Edit `rss-to-telegram.yml`:
 
@@ -164,7 +135,7 @@ In `post_to_telegram.py`:
 MAX_ENTRIES_TO_PROCESS = 10  # How many articles to process per run
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### "Unauthorized" Error
 - Check your bot token
@@ -187,14 +158,14 @@ MAX_ENTRIES_TO_PROCESS = 10  # How many articles to process per run
 - Ensure `posted_links.json` is being committed
 - Check that GitHub Actions has write permissions
 
-## 📝 View Logs
+## View Logs
 
 1. Go to the **Actions** tab in your repository
 2. Click on the latest workflow run
 3. Click on the "post-to-telegram" job
 4. View detailed logs
 
-## 🤝 Contributing
+## Contributing
 
 Pull requests are welcome!
 
